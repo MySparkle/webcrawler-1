@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/wow-yorick/webcrawler/errors"
+	"webcrawler/errors"
 )
 
 var DefaultSNGen = NewSNGenertor(1, 0)
