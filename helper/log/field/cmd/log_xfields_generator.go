@@ -124,6 +124,7 @@ func findFieldTypePrefixes(filePath string) ([]string, error) {
 	prefixes := []string{}
 	for _, decl := range astFile.Decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok && genDecl.Tok == token.CONST {
+
 			for _, spec := range genDecl.Specs {
 				if valueSpec, ok := spec.(*ast.ValueSpec); ok {
 					name := valueSpec.Names[0].Name
@@ -152,8 +153,9 @@ func (g *Generator) generate(pkgName string, prefixes ...string) ([]byte, error)
 	err := g.genFieldDecls(prefixes...)
 	if err != nil {
 		defer g.buf.Reset()
-		content, err = g.format()
 	}
+	content, err = g.format()
+	// content = g.buf.Bytes()
 	return content, err
 
 }
