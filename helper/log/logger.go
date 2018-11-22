@@ -48,6 +48,7 @@ func Dlogger() base.MyLogger {
 		nil)
 }
 
+// Logger建日志记录器
 func Logger(
 	loggerType base.LoggerType,
 	level base.LogLevel,
