@@ -1,34 +1,37 @@
 package module
 
 import (
+	"fmt"
 	"sync"
-	"webcrawler/module/errors"
+	"webcrawler/errors"
 )
 
-type Registrar interface {
-	Registrar(module Module) (bool, error)
+type Register interface {
+	Register(module Module) (bool, error)
 
-	Unregister(mid MID)(bool, error)
+	Unregister(mid MID) (bool, error)
 
-	Get(ModuleType Type) (map[MID]Module, error)
+	Get(ModuleType Type) (Module, error)
+
+	GetAllByType(moduleType Type) (map[MID]Module, error)
 
 	GetAll() map[MID]Module
 
 	Clear()
 }
 
-func NewRegistrar() Registrar {
+func NewRegistrar() Register {
 	return &myRegistrar{
-		moduleTypeMap:map[Type]map[MID]Module{},
+		moduleTypeMap: map[Type]map[MID]Module{},
 	}
 }
 
 type myRegistrar struct {
 	moduleTypeMap map[Type]map[MID]Module
-	rwlock sync.RWMutex
+	rwlock        sync.RWMutex
 }
 
-func (registrar *myRegistrar) Registrar(module Module) (bool, error) {
+func (registrar *myRegistrar) Register(module Module) (bool, error) {
 	if module == nil {
 		return false, errors.NewIllegalParameterError("nil module instance")
 	}
@@ -49,7 +52,7 @@ func (registrar *myRegistrar) Registrar(module Module) (bool, error) {
 	if modules == nil {
 		modules = map[MID]Module{}
 	}
-	if _, ok := module[mid]; ok {
+	if _, ok := modules[mid]; ok {
 		return false, nil
 	}
 	modules[mid] = module
@@ -68,7 +71,7 @@ func (registrar *myRegistrar) Unregister(mid MID) (bool, error) {
 	defer registrar.rwlock.Unlock()
 	if modules, ok := registrar.moduleTypeMap[moduleType]; ok {
 		if _, ok := modules[mid]; ok {
-			delete(modules,mid)
+			delete(modules, mid)
 			deleted = true
 		}
 	}
@@ -97,7 +100,7 @@ func (registrar *myRegistrar) Get(moduleType Type) (Module, error) {
 }
 
 func (registrar *myRegistrar) GetAllByType(moduleType Type) (map[MID]Module, error) {
-	if !legalType(moduleType) {
+	if !LegalType(moduleType) {
 		errMsg := fmt.Sprintf("illegal module type: %s", moduleType)
 		return nil, errors.NewIllegalParameterError(errMsg)
 	}
@@ -131,4 +134,3 @@ func (registrar *myRegistrar) Clear() {
 	defer registrar.rwlock.Unlock()
 	registrar.moduleTypeMap = map[Type]map[MID]Module{}
 }
-

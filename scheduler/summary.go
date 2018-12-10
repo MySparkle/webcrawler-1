@@ -40,7 +40,7 @@ type mySchedSummary struct {
 type SummaryStruct struct {
 	RequestArgs     RequestArgs             `json:"request_args"`
 	DataArgs        DataArgs                `json:"data_args"`
-	ModuleArgs      ModuleArgs              `json:"module_args"`
+	ModuleArgs      ModuleArgsSummary       `json:"module_args"`
 	Status          string                  `json:"status"`
 	Downloaders     []module.SummaryStruct  `json:"downloaders"`
 	Analyzers       []module.SummaryStruct  `json:"analyzers"`
@@ -140,7 +140,7 @@ type BufferPoolSummaryStruct struct {
 	BufferCap       uint32 `json:"buffer_cap"`
 	MaxBufferNumber uint32 `json:"max_buffer_number"`
 	BufferNumber    uint32 `json:"buffer_number"`
-	Total           uint32 `json:"total"`
+	Total           uint64 `json:"total"`
 }
 
 // getBufferPoolSummary 生成和返回数据缓冲池的摘要信息
@@ -153,7 +153,7 @@ func getBufferPoolSummary(bufferPool buffer.Pool) BufferPoolSummaryStruct {
 	}
 }
 
-func getModuleSummaries(registrar module.Registrar, mType module.Type) []module.SummaryStruct {
+func getModuleSummaries(registrar module.Register, mType module.Type) []module.SummaryStruct {
 	moduleMap, _ := registrar.GetAllByType(mType)
 	summaries := []module.SummaryStruct{}
 	if len(moduleMap) > 0 {

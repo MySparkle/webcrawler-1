@@ -39,7 +39,7 @@ func RegisterLogger(
 	return nil
 }
 
-func Dlogger() base.MyLogger {
+func DLogger() base.MyLogger {
 	return Logger(
 		base.TYPE_LOGRUS,
 		base.LEVEL_INFO,

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"webcrawler/cmap"
 	"webcrawler/helper/log"
 	"webcrawler/module"
 	"webcrawler/toolkit/buffer"
@@ -44,7 +45,7 @@ type myScheduler struct {
 	//可接受的URL主域名的字典
 	acceptedDomainMap cmap.ConcurrentMap
 	//组件注册器
-	registrar module.Registrar
+	registrar module.Register
 	//请求的缓冲池
 	reqBufferPool buffer.Pool
 	//响应的缓冲池
@@ -111,7 +112,7 @@ func (sched *myScheduler) Init(
 	}
 	sched.maxDepth = requestArgs.MaxDepth
 	logger.Infof("-- Max depth: %d", sched.maxDepth)
-	sched.acceptedDomainMap, _ = cmap.NewCocurrentMap(1, nil)
+	sched.acceptedDomainMap, _ = cmap.NewConcurrentMap(1, nil)
 	for _, domain := range requestArgs.AcceptedDomains {
 		sched.acceptedDomainMap.Put(domain, struct{}{})
 	}
@@ -124,7 +125,7 @@ func (sched *myScheduler) Init(
 	sched.summary = newSchedSummary(requestArgs, dataArgs, moduleArgs, sched)
 	//注册组件
 	logger.Info("Register modules...")
-	if err = sched.registrarModules(moduleArgs); err != nil {
+	if err = sched.registerModules(moduleArgs); err != nil {
 		return err
 	}
 	logger.Info("Scheduler has been initialized")
@@ -223,7 +224,7 @@ func (sched *myScheduler) Status() Status {
 	return status
 }
 
-func (sched *myScheduler) errorChan() <-chan error {
+func (sched *myScheduler) ErrorChan() <-chan error {
 	errBuffer := sched.errorBufferPool
 	errCh := make(chan error, errBuffer.BufferCap())
 	go func(errBuffer buffer.Pool, errCh chan error) {
@@ -267,6 +268,10 @@ func (sched *myScheduler) Idle() bool {
 		return false
 	}
 	return true
+}
+
+func (sched *myScheduler) Summary() SchedSummary {
+	return sched.summary
 }
 
 // 状态检查 并在满足条件时设置状态
@@ -378,7 +383,7 @@ func (sched *myScheduler) downloadOne(req *module.Request) {
 	}
 	resp, err := downloader.Download(req)
 	if resp != nil {
-		sedResp(resp, sched.respBufferPool)
+		sendResp(resp, sched.respBufferPool)
 	}
 	if err != nil {
 		sendError(err, m.ID(), sched.errorBufferPool)
@@ -532,7 +537,7 @@ func (sched *myScheduler) sendReq(req *module.Request) bool {
 		return false
 	}
 	pd, _ := getPrimaryDomain(httpReq.Host)
-	if sched.acceptedDomainMap.get(pd) == nil {
+	if sched.acceptedDomainMap.Get(pd) == nil {
 		if pd == "bing.net" {
 			panic(httpReq.URL)
 		}

@@ -11,7 +11,7 @@ type Pool interface {
 	BufferCap() uint32
 	MaxBufferNumber() uint32
 	BufferNumber() uint32
-	Total() uint32
+	Total() uint64
 	//阻塞的放数据
 	Put(datum interface{}) error
 
@@ -53,7 +53,7 @@ func NewPool(
 	return &myPool{
 		bufferCap:       bufferCap,
 		maxBufferNumber: maxBufferNumber,
-		bufferNumber:    1,
+		bufferNumber:    uint32(1),
 		bufCh:           bufCh,
 	}, nil
 }
@@ -170,8 +170,25 @@ func (pool *myPool) getData(
 			*count = 0
 			return
 		}
-
+		pool.rwlock.RLock()
+		if pool.Closed() {
+			atomic.AddUint32(&pool.bufferNumber, ^uint32(0))
+			err = ErrClosedBufferPool
+		} else {
+			pool.bufCh <- buf
+		}
+		pool.rwlock.RUnlock()
 	}()
+	datum, err = buf.Get()
+	if datum != nil {
+		atomic.AddUint64(&pool.total, ^uint64(0))
+		return
+	}
+	if err != nil {
+		return
+	}
+	(*count)++
+	return
 }
 
 func (pool *myPool) Close() bool {
