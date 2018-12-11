@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 	"webcrawler/module"
 )
@@ -103,8 +104,58 @@ func genResponseParsers() []module.ParseResponse {
 		})
 		return dataList, errs
 	}
-	parseImg := func(httpResp *http.Response, resqDepth uint32) ([]module.Data, []error{
-		return nil,[]error{fmt.Errorf("XXX")}
-	})
+	parseImg := func(httpResp *http.Response, resqDepth uint32) ([]module.Data, []error) {
+		//检查响应
+		if httpResp == nil {
+			return nil, []error{fmt.Errorf("nil HTTP response")}
+		}
+		httpReq := httpResp.Request
+		if httpReq == nil {
+			return nil, []error{fmt.Errorf("nil HTTP request")}
+		}
+		reqURL := httpReq.URL
+		if httpResp.StatusCode != 200 {
+			err := fmt.Errorf("unsupported status code %d (requestURL: %s)", httpResp.StatusCode, reqURL)
+			return nil, []error{err}
+		}
+		httpRespBody := httpResp.Body
+		if httpRespBody == nil {
+			err := fmt.Errorf("nil HTTP response body (requestURL: %s)", reqURL)
+			return nil, []error{err}
+		}
+		// 检查HTTP响应头中的内容类型
+		dataList := make([]module.Data, 0)
+		var pictureFormat string
+		if httpResp.Header != nil {
+			contentTypes := httpResp.Header["Content-Type"]
+			var contentType string
+			for _, ct := range contentTypes {
+				if strings.HasPrefix(ct, "image") {
+					contentType = ct
+					break
+				}
+			}
+			index1 := strings.Index(contentType, "/")
+			index2 := strings.Index(contentType, ";")
+			if index1 > 0 {
+				if index2 < 0 {
+					pictureFormat = contentType[index1+1:]
+				} else if index1 < index2 {
+					pictureFormat = contentType[index1+1 : index2]
+				}
+			}
+		}
+		if pictureFormat == "" {
+			return dataList, nil
+		}
+		//生成条目
+		item := make(map[string]interface{})
+		item["reader"] = httpRespBody
+		item["name"] = path.Base(reqURL.Path)
+		item["ext"] = pictureFormat
+		dataList = append(dataList, module.Item(item))
+		return dataList, nil
+	}
+	return []module.ParseResponse{parseLink, parseImg}
 
 }
