@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync/atomic"
 	"webcrawler/errors"
+	"webcrawler/helper/log"
 	"webcrawler/module"
 )
 

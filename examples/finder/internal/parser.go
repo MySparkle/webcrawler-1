@@ -7,6 +7,8 @@ import (
 	"path"
 	"strings"
 	"webcrawler/module"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 func genResponseParsers() []module.ParseResponse {
@@ -46,7 +48,7 @@ func genResponseParsers() []module.ParseResponse {
 			return dataList, nil
 		}
 		//解析HTTP响应体
-		doc, err := goquery.NewDocumentFormReader(body)
+		doc, err := goquery.NewDocumentFromReader(body)
 		if err != nil {
 			return dataList, []error{err}
 		}

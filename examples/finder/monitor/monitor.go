@@ -1,4 +1,4 @@
-package mointor
+package monitor
 
 import (
 	"context"

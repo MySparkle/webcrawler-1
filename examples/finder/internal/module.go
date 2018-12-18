@@ -21,7 +21,7 @@ func GetDownloaders(number uint8) ([]module.Downloader, error) {
 		if err != nil {
 			return downloaders, err
 		}
-		d, err := downloader.New(mid, genHTTPClient(), module.CaculateScoreSimple)
+		d, err := downloader.New(mid, genHTTPClient(), module.CalculateScoreSimple)
 		if err != nil {
 			return downloaders, err
 		}

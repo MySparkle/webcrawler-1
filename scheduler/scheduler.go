@@ -220,7 +220,7 @@ func (sched *myScheduler) Status() Status {
 	var status Status
 	sched.statusLock.Lock()
 	status = sched.status
-	sched.statusLock.RUnlock()
+	sched.statusLock.Unlock()
 	return status
 }
 
