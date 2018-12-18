@@ -3,8 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
+	"time"
+	lib "webcrawler/examples/finder/internal"
+	"webcrawler/examples/finder/monitor"
 	"webcrawler/helper/log"
 	sched "webcrawler/scheduler"
 )
@@ -73,4 +77,52 @@ func main() {
 		ErrorMaxBufferNumber: 1,
 	}
 	downloaders, err := lib.GetDownloaders(1)
+	if err != nil {
+		logger.Fatalf("An error occurs when creating downloaders: %s", err)
+	}
+	analyzers, err := lib.GetAnalyzers(1)
+	if err != nil {
+		logger.Fatalf("An error occurs when creating analyzers:%s", err)
+	}
+	pipelines, err := lib.GetPipelines(1, dirPath)
+	if err != nil {
+		logger.Fatalf("An error occurs when creating pipelines:%s", err)
+	}
+	moduleArgs := sched.ModuleArgs{
+		Downloaders: downloaders,
+		Analyzers:   analyzers,
+		Pipelines:   pipelines,
+	}
+	// 初始化调度器
+	err = scheduler.Init(
+		requestArgs,
+		dataArgs,
+		moduleArgs)
+	if err != nil {
+		logger.Fatalf("An error occurs when initializing scheduler:%s", err)
+	}
+	//准备监控参数
+	checkInterval := time.Second
+	summarizeInterval := 100 * time.Microsecond
+	maxIdleCount := uint(5)
+	checkCountChan := monitor.Monitor(
+		scheduler,
+		checkInterval,
+		summarizeInterval,
+		maxIdleCount,
+		true,
+		lib.Record)
+	//准备调度器的参数启动
+	firstHTTPReq, err := http.NewRequest("GET", firstURL, nil)
+	if err != nil {
+		logger.Fatalln(err)
+		return
+	}
+	// 开启调度器
+	err = scheduler.Start(firstHTTPReq)
+	if err != nil {
+		logger.Fatalf("An error occurs when starting scheduler: %s", err)
+	}
+	//等待监控结束
+	<-checkCountChan
 }
